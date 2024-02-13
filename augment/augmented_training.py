@@ -22,7 +22,7 @@ class AugmentedModel:
         self.target = target
 
     def train(self, strategy=SAU.replace30, _model=None):
-
+        # x_train和y_train分别为训练集样本和标签
         x_train, y_train = self.target.load_original_data('train')
         x_val, y_val = self.target.load_original_data('val')
 

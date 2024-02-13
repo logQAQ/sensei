@@ -21,33 +21,53 @@ class DataGenerator(keras.utils.Sequence):
     """Generates data for Keras"""
     def __init__(self, original_target=None, model=None, x_original_train=None, y_original_train=None,
                  batch_size=128, strategy=SAU.replace30, graph=None):
-
+        # 载入设置
         self.config = ExperimentalConfig.gen_config()
+        # 初始化一个augmenter类
         self.au = Augmenter()
+        # 确定数据集参数
         self.batch_size = batch_size
         self.original_target = original_target
+        # 保存原样本和原样本标签
         self.x_original_train = x_original_train
         self.y_original_train = y_original_train
+        # 保存策略
         self.strategy = strategy
+        # 保存模型
         self.model = model
         self.graph = graph
-
+        # 如果开启enable_optimize，则判断
         if self.config.enable_optimize:
             self.skipped_node = 0
-
+            # 初始化数组保存本轮和上轮对应样本是否分类正确
             self.is_robust = [False] * len(x_original_train)
             self.prev_is_robust = [False] * len(x_original_train)
 
-        # statistic record
+        # statistic record 记录一轮时间
         self.total_time = 0
         self.predict_time = 0
+        # 记录标签，生成数组 num_classes times num_classes
         self.label_record = [[0 for x in range(original_target.num_classes)]
                              for y in range(original_target.num_classes)]
-
+        # 复制一份原数据集
         temp_x_original_train = copy.deepcopy(self.x_original_train)
+        # 类内保存分类标签
         self.y_train = y_original_train
+        """
+        original_target.preprocess_original_imgs
+        1. CenterCrop
+        2. resize
+        3. ToTensor
+        4. Normalize
+        """
         self.x_train = original_target.preprocess_original_imgs(temp_x_original_train)
-
+        #
+        #
+        """
+        选定不同策略，通过枚举类做映射, 两种策略，一种是只用loss做fitness function，另一种是使用model coverage加loss做fitness function
+        1. 以样本loss大小作为fit loss 选大的
+        2. loss 加 neuron coverage
+        """
         if self.strategy.value == SAU.ga_loss.value:
             self.ga_selector = GASelect(self.x_original_train, self.y_original_train, self.original_target)
         elif self.strategy.value == SAU.ga_cov.value:

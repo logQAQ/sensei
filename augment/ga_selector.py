@@ -76,43 +76,58 @@ class GridTransformation:
 class GASelect:
 
     def __init__(self, x_train=None, y_train=None, original_target=None):
+        # 载入配置文件
         config = ExperimentalConfig.gen_config()
         self.config = config
         self.queue_set = []  # num_test * num_mutate
+        # 染色体长度
         self.queue_len = config.queue_len
+        # 初始化一个扰动工具
         self.pt = Perturbator()
+        # 记录原数据生成类
         self.original_target = original_target
-
+        # 记录数据集
         self.x_train = x_train
         self.y_train = y_train
 
         # using grid strategy to init population
+        # 通过格子法初始化，默认不用
         if not self.config.random_init:
             self.gt = GridTransformation(original_target.num_classes)
   
         # generate first population
+        # 生成第一轮的染色体
+        # 深度拷贝准备生成子代
+
         temp_x_original_train = copy.deepcopy(x_train)
         for i in range(len(temp_x_original_train)):
+            # 对于每一个样本
+            # 保存标签
             label = np.argmax(y_train[i])
             q = list()
             # add original data to initial population
+            # Item为描述染色体的类，储存了记录遗传子的类Transformation和对应的loss值
             q.append(Item(Transformation(), 1))  # initialize loss as 1
 
             for j in range(9):
                 if self.config.random_init:
                     # random init population
+                    # 随机选择角度，位移，剪切三种操作的参数，参数
                     angle = random.choice(config.rotation_range)
                     translation = random.choice(config.translate_range)
                     shear = random.choice(config.shear_range)
                     # transformation based on filter
+                    # 是否采用filter-based方法，包括变焦虚化对比度和亮度
                     if config.enable_filters:
                         zoom = random.choice(config.zoom_range)
                         blur = random.choice(config.blur_range)
                         brightness = random.choice(config.brightness_range)
                         contrast = random.choice(config.contrast_range)
+                        # 通过遗传子类记录遗传子
                         tr = Transformation(angle, translation, shear, zoom, blur, brightness, contrast)
                     else:
                         tr = Transformation(angle, translation, shear)
+                    # 将遗传子加入
                     q.append(Item(tr, 1))
                 else:
                     tr = self.gt.get_next_transformation(label)

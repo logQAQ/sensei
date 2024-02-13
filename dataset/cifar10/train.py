@@ -306,8 +306,11 @@ class Cifar10Model:
         return img_data
 
     def cv2_preprocess_img(self, img):
+        # 去掉通道，找出最小边
         min_side = min(img.shape[:-1])
+        # 找出中心点
         centre = img.shape[0] // 2, img.shape[1] // 2
+        #
         img = img[centre[0] - min_side // 2:centre[0] + min_side // 2,
                   centre[1] - min_side // 2:centre[1] + min_side // 2]
         img = cv2.resize(img, (self.IMG_SIZE, self.IMG_SIZE))
@@ -326,6 +329,10 @@ class Cifar10Model:
             return list(self.x_test), y_test
 
     def preprocess_original_imgs(self, imgs=None):
+        """
+        预处理，对批次内数据进行预处理
+        1. 找到最小边长度
+        """
         for i in range(len(imgs)):
             imgs[i] = self.cv2_preprocess_img(imgs[i])
         imgs = np.asarray(imgs)
@@ -357,7 +364,11 @@ class Cifar10Model:
 
     def train_dnn_model(self, _model=None, x_train=None, y_train=None,
                         x_val=None, y_val=None, train_strategy=None):
-        """train a dnn model on cifar-10 dataset based on train strategy"""
+        """
+        train a dnn model on cifar-10 dataset based on train strategy
+        x_train: 训练图像
+        y_train: 训练标签
+        """
         # k.set_image_data_format('channels_last')
         model_id = _model[0]
         weights_file = _model[1]
