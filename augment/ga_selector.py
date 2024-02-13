@@ -108,7 +108,7 @@ class GASelect:
             # add original data to initial population
             # Item为描述染色体的类，储存了记录遗传子的类Transformation和对应的loss值
             q.append(Item(Transformation(), 1))  # initialize loss as 1
-
+            # 产生10个染色体
             for j in range(9):
                 if self.config.random_init:
                     # random init population
@@ -132,18 +132,21 @@ class GASelect:
                 else:
                     tr = self.gt.get_next_transformation(label)
                     q.append(Item(tr, 1))
-               
+            # self.queue_set包含了每个样本初始化的10个变体，和每个样本对应
             self.queue_set.append(q)
 
     def generate_next_population(self, start=0, end=-1):
+        # 如果非cifar10 end为-1则全部数据集样本生成下一代子代
         if end == -1:
             end = len(self.queue_set)
+        # 如果是cifar10则随机翻转图像，左右反转
         if self.original_target.__class__.__name__ == "Cifar10Model":
             for i in range(start, end):
                 flip = random.choice([True, False])
                 if flip:
                     self.x_train[i] = np.fliplr(self.x_train[i])
 
+        # 进行交叉变异，非变异则交叉，都对应本轮的所有样本
         r = random.choice(range(100)) / float(100)
         if r < self.config.prob_mutate:
             return self.mutate(start, end)
@@ -154,10 +157,14 @@ class GASelect:
         is_robust = []
         logger.debug("Using mutate operators")
         for i in range(start, end):
+            # 对所有样本的种群库更新
+            # 提取当前种群库
             q = self.queue_set[i]
+            # 取出原样本
             top_item = q[0]
 
             # check point-wise robustness
+            # 如果原样本的loss已经小于阈值，则
             if self.config.enable_optimize and top_item.loss < self.config.robust_threshold:
                 # add fake elements
                 for j in range(self.config.popsize):
